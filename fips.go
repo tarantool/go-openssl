@@ -17,7 +17,7 @@ package openssl
 /*
 #include <openssl/ssl.h>
 
-#if OPENSSL_VERSION_MAJOR == 3
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 	int FIPS_mode_set(int ONOFF) {
 		return 0;
 	}
@@ -35,7 +35,7 @@ func FIPSModeSet(mode bool) error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	if C.OPENSSL_VERSION_MAJOR == 3 {
+	if C.OPENSSL_VERSION_NUMBER >= 0x30000000 {
 		return errors.New("FIPS_mode_set() has been deleted from OpenSSL 3.0")
 	}
 
