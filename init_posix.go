@@ -13,6 +13,8 @@
 // limitations under the License.
 
 //go:build (linux || darwin || solaris || freebsd || openbsd) && !windows
+// +build linux darwin solaris freebsd openbsd
+// +build !windows
 
 package openssl
 

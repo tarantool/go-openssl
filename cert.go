@@ -19,7 +19,7 @@ import "C"
 
 import (
 	"errors"
-	"io"
+	"io/ioutil"
 	"math/big"
 	"runtime"
 	"time"
@@ -383,7 +383,7 @@ func (c *Certificate) MarshalPEM() (pem_block []byte, err error) {
 	if int(C.PEM_write_bio_X509(bio, c.x)) != 1 {
 		return nil, errors.New("failed dumping certificate")
 	}
-	return io.ReadAll(asAnyBio(bio))
+	return ioutil.ReadAll(asAnyBio(bio))
 }
 
 // PublicKey returns the public key embedded in the X509 certificate.

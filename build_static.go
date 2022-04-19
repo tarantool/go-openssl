@@ -13,6 +13,7 @@
 // limitations under the License.
 
 //go:build openssl_static
+// +build openssl_static
 
 package openssl
 

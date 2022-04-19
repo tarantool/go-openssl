@@ -20,6 +20,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"runtime"
 	"sync"
@@ -120,7 +121,7 @@ func NewCtxFromFiles(cert_file string, key_file string) (*Ctx, error) {
 		return nil, err
 	}
 
-	cert_bytes, err := os.ReadFile(cert_file)
+	cert_bytes, err := ioutil.ReadFile(cert_file)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func NewCtxFromFiles(cert_file string, key_file string) (*Ctx, error) {
 		}
 	}
 
-	key_bytes, err := os.ReadFile(key_file)
+	key_bytes, err := ioutil.ReadFile(key_file)
 	if err != nil {
 		return nil, err
 	}

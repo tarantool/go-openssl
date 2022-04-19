@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"io"
+	"io/ioutil"
 	"net"
 	"sync"
 	"testing"
@@ -282,7 +283,7 @@ func ClosingTest(t *testing.T, constructor func(
 
 		go func() {
 			defer wg.Done()
-			data, err := io.ReadAll(sslconn2)
+			data, err := ioutil.ReadAll(sslconn2)
 			if !bytes.Equal(data, []byte("hello")) {
 				t.Error("bytes don't match")
 			}
@@ -588,7 +589,7 @@ func LotsOfConns(t *testing.T, payload_size int64, loops, clients int,
 					}
 				}()
 				for i := 0; i < loops; i++ {
-					_, err := io.Copy(io.Discard,
+					_, err := io.Copy(ioutil.Discard,
 						io.LimitReader(conn, payload_size))
 					if err != nil {
 						t.Errorf("failed reading: %s", err)
@@ -634,7 +635,7 @@ func LotsOfConns(t *testing.T, payload_size int64, loops, clients int,
 					t.Errorf("failed writing: %s", err)
 					return
 				}
-				_, err = io.Copy(io.Discard,
+				_, err = io.Copy(ioutil.Discard,
 					io.LimitReader(ssl_client, payload_size))
 				if err != nil {
 					t.Errorf("failed reading: %s", err)

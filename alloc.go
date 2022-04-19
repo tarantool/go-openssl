@@ -11,9 +11,9 @@ import (
 
 //export go_ssl_crypto_ex_free
 func go_ssl_crypto_ex_free(
-	parent *C.void, ptr unsafe.Pointer,
+	parent unsafe.Pointer, ptr unsafe.Pointer,
 	cryptoData *C.CRYPTO_EX_DATA, idx C.int,
-	argl C.long, argp *C.void,
+	argl C.long, argp unsafe.Pointer,
 ) {
 	pointer.Unref(ptr)
 }
