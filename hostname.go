@@ -17,7 +17,7 @@ package openssl
 /*
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
-#if OPENSSL_VERSION_MAJOR == 3
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 	#include <openssl/x509v3.h>
 	typedef const char x509char;
 #else
