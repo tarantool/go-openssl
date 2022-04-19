@@ -1,4 +1,4 @@
-module github.com/libp2p/go-openssl
+module github.com/tarantool/go-openssl
 
 require (
 	github.com/mattn/go-pointer v0.0.1
@@ -6,4 +6,4 @@ require (
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb // indirect
 )
 
-go 1.16
+go 1.12
