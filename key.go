@@ -385,7 +385,7 @@ func LoadPublicKeyFromPEM(pem_block []byte) (PublicKey, error) {
 
 	key := C.PEM_read_bio_PUBKEY(bio, nil, nil, nil)
 	if key == nil {
-		return nil, errors.New("failed reading public key der")
+		return nil, errors.New("failed reading public key")
 	}
 
 	p := &pKey{key: key}
