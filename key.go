@@ -19,6 +19,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"runtime"
 	"unsafe"
@@ -302,9 +303,11 @@ func LoadPrivateKeyFromPEM(pem_block []byte) (PrivateKey, error) {
 	}
 	defer C.BIO_free(bio)
 
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	key := C.PEM_read_bio_PrivateKey(bio, nil, nil, nil)
 	if key == nil {
-		return nil, errors.New("failed reading private key")
+		return nil, fmt.Errorf("failed reading private key: %w", errorFromErrorQueue())
 	}
 
 	p := &pKey{key: key}
@@ -328,9 +331,12 @@ func LoadPrivateKeyFromPEMWithPassword(pem_block []byte, password string) (
 	defer C.BIO_free(bio)
 	cs := C.CString(password)
 	defer C.free(unsafe.Pointer(cs))
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	key := C.PEM_read_bio_PrivateKey(bio, nil, nil, unsafe.Pointer(cs))
 	if key == nil {
-		return nil, errors.New("failed reading private key")
+		return nil, fmt.Errorf("failed reading private key: %w", errorFromErrorQueue())
 	}
 
 	p := &pKey{key: key}
@@ -352,9 +358,11 @@ func LoadPrivateKeyFromDER(der_block []byte) (PrivateKey, error) {
 	}
 	defer C.BIO_free(bio)
 
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	key := C.d2i_PrivateKey_bio(bio, nil)
 	if key == nil {
-		return nil, errors.New("failed reading private key der")
+		return nil, fmt.Errorf("failed reading private key der: %w", errorFromErrorQueue())
 	}
 
 	p := &pKey{key: key}
@@ -383,9 +391,11 @@ func LoadPublicKeyFromPEM(pem_block []byte) (PublicKey, error) {
 	}
 	defer C.BIO_free(bio)
 
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	key := C.PEM_read_bio_PUBKEY(bio, nil, nil, nil)
 	if key == nil {
-		return nil, errors.New("failed reading public key")
+		return nil, fmt.Errorf("failed reading public key: %w", errorFromErrorQueue())
 	}
 
 	p := &pKey{key: key}
@@ -407,9 +417,11 @@ func LoadPublicKeyFromDER(der_block []byte) (PublicKey, error) {
 	}
 	defer C.BIO_free(bio)
 
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 	key := C.d2i_PUBKEY_bio(bio, nil)
 	if key == nil {
-		return nil, errors.New("failed reading public key der")
+		return nil, fmt.Errorf("failed reading public key der: %w", errorFromErrorQueue())
 	}
 
 	p := &pKey{key: key}
