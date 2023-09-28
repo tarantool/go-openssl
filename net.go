@@ -15,6 +15,7 @@
 package openssl
 
 import (
+	"context"
 	"errors"
 	"net"
 	"time"
@@ -77,8 +78,8 @@ const (
 // some certs to the certificate store of the client context you're using.
 // This library is not nice enough to use the system certificate store by
 // default for you yet.
-func Dial(network, addr string, ctx *Ctx, flags DialFlags) (*Conn, error) {
-	return DialSession(network, addr, ctx, flags, nil)
+func Dial(network, addr string, sslCtx *Ctx, flags DialFlags) (*Conn, error) {
+	return DialSession(network, addr, sslCtx, flags, nil)
 }
 
 // DialTimeout acts like Dial but takes a timeout for network dial.
@@ -87,10 +88,57 @@ func Dial(network, addr string, ctx *Ctx, flags DialFlags) (*Conn, error) {
 //
 // See func Dial for a description of the network, addr, ctx and flags
 // parameters.
-func DialTimeout(network, addr string, timeout time.Duration, ctx *Ctx,
+func DialTimeout(network, addr string, timeout time.Duration, sslCtx *Ctx,
 	flags DialFlags) (*Conn, error) {
-	d := net.Dialer{Timeout: timeout}
-	return dialSession(d, network, addr, ctx, flags, nil)
+	host, err := parseHost(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := net.DialTimeout(network, addr, timeout)
+	if err != nil {
+		return nil, err
+	}
+	sslCtx, err = prepareCtx(sslCtx)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	client, err := createSession(conn, flags, host, sslCtx, nil)
+	if err != nil {
+		conn.Close()
+	}
+	return client, err
+}
+
+// DialContext acts like Dial but takes a context for network dial.
+//
+// The context includes only network dial. It does not include OpenSSL calls.
+//
+// See func Dial for a description of the network, addr, ctx and flags
+// parameters.
+func DialContext(ctx context.Context, network, addr string,
+	sslCtx *Ctx, flags DialFlags) (*Conn, error) {
+	host, err := parseHost(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	dialer := net.Dialer{}
+	conn, err := dialer.DialContext(ctx, network, addr)
+	if err != nil {
+		return nil, err
+	}
+	sslCtx, err = prepareCtx(sslCtx)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	client, err := createSession(conn, flags, host, sslCtx, nil)
+	if err != nil {
+		conn.Close()
+	}
+	return client, err
 }
 
 // DialSession will connect to network/address and then wrap the corresponding
@@ -106,61 +154,78 @@ func DialTimeout(network, addr string, timeout time.Duration, ctx *Ctx,
 //
 // If session is not nil it will be used to resume the tls state. The session
 // can be retrieved from the GetSession method on the Conn.
-func DialSession(network, addr string, ctx *Ctx, flags DialFlags,
+func DialSession(network, addr string, sslCtx *Ctx, flags DialFlags,
 	session []byte) (*Conn, error) {
-	var d net.Dialer
-	return dialSession(d, network, addr, ctx, flags, session)
+	host, err := parseHost(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := net.Dial(network, addr)
+	if err != nil {
+		return nil, err
+	}
+	sslCtx, err = prepareCtx(sslCtx)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	client, err := createSession(conn, flags, host, sslCtx, session)
+	if err != nil {
+		conn.Close()
+	}
+	return client, err
 }
 
-func dialSession(d net.Dialer, network, addr string, ctx *Ctx, flags DialFlags,
-	session []byte) (*Conn, error) {
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return nil, err
+func prepareCtx(sslCtx *Ctx) (*Ctx, error) {
+	if sslCtx == nil {
+		return NewCtx()
 	}
-	if ctx == nil {
-		var err error
-		ctx, err = NewCtx()
-		if err != nil {
-			return nil, err
-		}
-		// TODO: use operating system default certificate chain?
-	}
+	return sslCtx, nil
+}
 
-	c, err := d.Dial(network, addr)
-	if err != nil {
-		return nil, err
+func parseHost(addr string) (string, error) {
+	host, _, err := net.SplitHostPort(addr)
+	return host, err
+}
+
+func handshake(conn *Conn, host string, flags DialFlags) error {
+	var err error
+	if flags&DisableSNI == 0 {
+		err = conn.SetTlsExtHostName(host)
+		if err != nil {
+			return err
+		}
 	}
-	conn, err := Client(c, ctx)
+	err = conn.Handshake()
 	if err != nil {
-		c.Close()
+		return err
+	}
+	if flags&InsecureSkipHostVerification == 0 {
+		err = conn.VerifyHostname(host)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createSession(c net.Conn, flags DialFlags, host string, sslCtx *Ctx,
+	session []byte) (*Conn, error) {
+	conn, err := Client(c, sslCtx)
+	if err != nil {
 		return nil, err
 	}
 	if session != nil {
 		err := conn.setSession(session)
 		if err != nil {
-			c.Close()
-			return nil, err
-		}
-	}
-	if flags&DisableSNI == 0 {
-		err = conn.SetTlsExtHostName(host)
-		if err != nil {
 			conn.Close()
 			return nil, err
 		}
 	}
-	err = conn.Handshake()
-	if err != nil {
+	if err := handshake(conn, host, flags); err != nil {
 		conn.Close()
 		return nil, err
-	}
-	if flags&InsecureSkipHostVerification == 0 {
-		err = conn.VerifyHostname(host)
-		if err != nil {
-			conn.Close()
-			return nil, err
-		}
 	}
 	return conn, nil
 }

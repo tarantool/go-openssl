@@ -738,7 +738,7 @@ func TestStdlibLotsOfConns(t *testing.T) {
 		})
 }
 
-func getCtx(t *testing.T) *Ctx {
+func GetCtx(t *testing.T) *Ctx {
 	ctx, err := NewCtx()
 	if err != nil {
 		t.Fatal(err)
@@ -761,7 +761,7 @@ func getCtx(t *testing.T) *Ctx {
 }
 
 func TestOpenSSLLotsOfConns(t *testing.T) {
-	ctx := getCtx(t)
+	ctx := GetCtx(t)
 	if err := ctx.SetCipherList("AES128-SHA"); err != nil {
 		t.Fatal(err)
 	}
@@ -928,7 +928,7 @@ func TestOpenSSLLotsOfConnsWithFail(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			LotsOfConns(t, 1024*64, 10, 100, 0*time.Second,
 				func(l net.Listener) net.Listener {
-					return NewListener(l, getCtx(t))
+					return NewListener(l, GetCtx(t))
 				}, func(c net.Conn) (net.Conn, error) {
 					return Client(c, getClientCtx(t))
 				})
