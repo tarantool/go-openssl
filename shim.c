@@ -439,6 +439,16 @@ int X_SSL_verify_cb(int ok, X509_STORE_CTX* store) {
 	return go_ssl_verify_cb_thunk(p, ok, store);
 }
 
+void X_SSL_toggle_tracing(SSL* ssl, FILE* output, short enable) {
+	if (enable) {
+		SSL_set_msg_callback(ssl, SSL_trace);
+		SSL_set_msg_callback_arg(ssl, BIO_new_fp(output, BIO_NOCLOSE));
+	} else {
+		SSL_set_msg_callback(ssl, NULL);
+		SSL_set_msg_callback_arg(ssl, NULL);
+	}
+}
+
 const SSL_METHOD *X_SSLv23_method() {
 	return SSLv23_method();
 }

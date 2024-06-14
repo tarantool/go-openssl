@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <openssl/bio.h>
 #include <openssl/crypto.h>
@@ -53,6 +54,7 @@ extern long X_SSL_set_tlsext_host_name(SSL *ssl, const char *name);
 extern const char * X_SSL_get_cipher_name(const SSL *ssl);
 extern int X_SSL_session_reused(SSL *ssl);
 extern int X_SSL_new_index();
+extern void X_SSL_toggle_tracing(SSL* ssl, FILE* output, short enable);
 
 extern const SSL_METHOD *X_SSLv23_method();
 extern const SSL_METHOD *X_SSLv3_method();

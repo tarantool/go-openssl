@@ -430,3 +430,27 @@ func (c *Certificate) GetExtensionValue(nid NID) []byte {
 	val := C.get_extention(c.x, C.int(nid), &dataLength)
 	return C.GoBytes(unsafe.Pointer(val), dataLength)
 }
+
+// Hash uses the given digest to generate a hash of the certificate. Use GetDigestByName
+// to get a digest.
+func (c *Certificate) Hash(digest *Digest) []byte {
+	var hashLength C.uint
+	hash := make([]byte, C.EVP_MAX_MD_SIZE)
+
+	C.X509_digest(c.x, digest.ptr, (*C.uchar)(unsafe.Pointer(&hash[0])), &hashLength)
+
+	return hash[:hashLength]
+}
+
+// VerifyCertErrorString returns a human-readable error string for the given verification error.
+// https://www.openssl.org/docs/man3.1/man3/X509_verify_cert_error_string.html
+func VerifyCertErrorString(result VerifyResult) string {
+	// Locking the thread because the docs say:
+	// If an unrecognised error code is passed to X509_verify_cert_error_string() the
+	// numerical value of the unknown code is returned in a static buffer. This is not
+	// thread safe but will never happen unless an invalid code is passed.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	return C.GoString(C.X509_verify_cert_error_string(C.long(result)))
+}

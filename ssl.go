@@ -19,6 +19,7 @@ import "C"
 
 import (
 	"os"
+	"runtime"
 	"unsafe"
 
 	"github.com/mattn/go-pointer"
@@ -92,6 +93,23 @@ func (s *SSL) ClearOptions(options Options) Options {
 	return Options(C.X_SSL_clear_options(s.ssl, C.long(options)))
 }
 
+// EnableTracing enables TLS handshake tracing using openssls
+// SSL_trace function. If useStderr is false, stdout is used.
+// https://www.openssl.org/docs/manmaster/man3/SSL_trace.html
+func (s *SSL) EnableTracing(useStderr bool) {
+	output := C.stdout
+	if useStderr {
+		output = C.stderr
+	}
+
+	C.X_SSL_toggle_tracing(s.ssl, output, 1)
+}
+
+// DisableTracing unsets the msg callback from EnableTracing.
+func (s *SSL) DisableTracing() {
+	C.X_SSL_toggle_tracing(s.ssl, nil, 0)
+}
+
 // SetVerify controls peer verification settings. See
 // http://www.openssl.org/docs/ssl/SSL_CTX_set_verify.html
 func (s *SSL) SetVerify(options VerifyOptions, verify_cb VerifyCallback) {
@@ -150,6 +168,79 @@ func (s *SSL) SetSSLCtx(ctx *Ctx) {
 	 * adjust other things we care about
 	 */
 	C.SSL_set_SSL_CTX(s.ssl, ctx.ctx)
+}
+
+// GetVersion() returns the name of the protocol used for the connection. It
+// should only be called after the initial handshake has been completed otherwise
+// the result may be unreliable.
+// https://www.openssl.org/docs/man1.0.2/man3/SSL_get_version.html
+func (s *SSL) GetVersion() string {
+	return C.GoString(C.SSL_get_version(s.ssl))
+}
+
+// DaneEnable enables DANE validation for this connection. It must be called
+// before the TLS handshake.
+// https://www.openssl.org/docs/man1.1.1/man3/SSL_dane_clear_flags.html
+func (s *SSL) DaneEnable(tlsaBaseDomain string) error {
+	tlsaBaseDomainCString := C.CString(tlsaBaseDomain)
+	defer C.free(unsafe.Pointer(tlsaBaseDomainCString))
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if C.SSL_dane_enable(s.ssl, tlsaBaseDomainCString) <= 0 {
+		return errorFromErrorQueue()
+	}
+
+	return nil
+}
+
+// DaneTlsaAdd loads a TLSA record that will be validated against the presented certificate.
+// Data must be in wire form, not hex ASCII. If all TLSA records you try to add are unusable
+// (bool return value) an opportunistic application must disable peer authentication by
+// using a verify mode equal to VerifyNone.
+// https://www.openssl.org/docs/man1.1.1/man3/SSL_dane_clear_flags.html
+func (s *SSL) DaneTlsaAdd(usage, selector, matchingType byte, data []byte) (bool, error) {
+	cData := C.CBytes(data)
+	defer C.free(cData)
+
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if status := C.SSL_dane_tlsa_add(
+		s.ssl,
+		C.uchar(usage),
+		C.uchar(selector),
+		C.uchar(matchingType),
+		(*C.uchar)(cData),
+		C.size_t(len(data)),
+	); status < 0 {
+		return false, errorFromErrorQueue()
+	} else if status == 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+// DaneGet0DaneAuthority returns a value that is negative if DANE verification failed (or
+// was not enabled), 0 if an EE TLSA record directly matched the leaf certificate, or a
+// positive number indicating the depth at which a TA record matched an issuer certificate.
+// However, the depth doesn't refer to the list of certificates as sent by the peer but rather
+// how it's returned from SSL_get0_verified_chain.
+// https://www.openssl.org/docs/man1.1.1/man3/SSL_dane_clear_flags.html
+func (s *SSL) DaneGet0DaneAuthority() int {
+	return int(C.SSL_get0_dane_authority(s.ssl, nil, nil))
+}
+
+// DaneSetFlags enables given flags for this connection. Returns previous flags.
+// https://www.openssl.org/docs/man1.1.1/man3/SSL_dane_clear_flags.html
+func (s *SSL) DaneSetFlags(flags DaneFlags) DaneFlags {
+	return DaneFlags(C.SSL_dane_set_flags(s.ssl, C.ulong(flags)))
+}
+
+// DaneClearFlags disables flags set by DaneSetFlags. Returns previous flags.
+func (s *SSL) DaneClearFlags(flags DaneFlags) DaneFlags {
+	return DaneFlags(C.SSL_dane_clear_flags(s.ssl, C.ulong(flags)))
 }
 
 //export sni_cb_thunk
