@@ -15,6 +15,7 @@
 package openssl
 
 import (
+	"encoding/hex"
 	"math/big"
 	"testing"
 	"time"
@@ -160,5 +161,28 @@ func TestCertVersion(t *testing.T) {
 	}
 	if vers := cert.GetVersion(); vers != X509_V3 {
 		t.Fatalf("bad version: %d", vers)
+	}
+}
+
+func TestCertHash(t *testing.T) {
+	cert, err := LoadCertificateFromPEM(certBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	digest, err := GetDigestByName("SHA256")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if hash := hex.EncodeToString(cert.Hash(digest)); hash != certHashHex {
+		t.Fatalf("Wrong hash returned, expected %q, got %q", certHashHex, hash)
+	}
+}
+
+func TestVerifyCertErrorString(t *testing.T) {
+	expected := "unable to get issuer certificate"
+	if result := VerifyCertErrorString(UnableToGetIssuerCert); result != expected {
+		t.Fatalf("Wrong cert error string returned, expected %q, got %q", expected, result)
 	}
 }

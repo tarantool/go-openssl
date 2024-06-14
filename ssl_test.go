@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -53,7 +54,8 @@ tCzcieQbb6KqUyxxzgTelXq2IxJUyU74Jv96BZ8cA7Qvwv1jwsfxYv7VHLuFAmtW
 KCDFmLjMtdrKX+q5zJe7
 -----END CERTIFICATE-----
 `)
-	keyBytes = []byte(`-----BEGIN RSA PRIVATE KEY-----
+	certHashHex = "b67bf8116986404c17877098a2992a30b77d0b6f3b5f531340afa27804955a69"
+	keyBytes    = []byte(`-----BEGIN RSA PRIVATE KEY-----
 MIIEpQIBAAKCAQEA3X94nDbxbK5a5zS4vEqHLHKpUmxavqRL5oXEqKoAy6nm56rv
 C3e9xySe+DBlxIEV/MWU+RYpzjC99QkerfRP493aleqfhn3ZRS3tyKrQtP2z1Zwg
 wYqwcoASOLgqzKvtVYQMT1nJaw6O5fUEWG7BMR/ZX5/kcr8XjTGYjgEmrL1WTZ3G
@@ -932,6 +934,177 @@ func TestOpenSSLLotsOfConnsWithFail(t *testing.T) {
 				}, func(c net.Conn) (net.Conn, error) {
 					return Client(c, getClientCtx(t))
 				})
+		})
+	}
+}
+
+func newDefaultServer(t testing.TB, serverConn net.Conn, ctx *Ctx) (*Conn, error) {
+	ctx.SetVerify(VerifyNone, passThruVerify(t))
+	key, err := LoadPrivateKeyFromPEM(keyBytes)
+	if err != nil {
+		return nil, err
+	}
+	err = ctx.UsePrivateKey(key)
+	if err != nil {
+		return nil, err
+	}
+	cert, err := LoadCertificateFromPEM(certBytes)
+	if err != nil {
+		return nil, err
+	}
+	err = ctx.UseCertificate(cert)
+	if err != nil {
+		return nil, err
+	}
+	err = ctx.SetCipherList("AES128-SHA")
+	if err != nil {
+		return nil, err
+	}
+	server, err := Server(serverConn, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return server, nil
+
+}
+
+func doHandshake(t testing.TB, server, client *Conn) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+
+		err := client.Handshake()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+
+		err := server.Handshake()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	wg.Wait()
+}
+
+func TestOpenSSLGetVersion(t *testing.T) {
+	serverConn, clientConn := NetPipe(t)
+
+	ctx, err := NewCtx()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ok := ctx.SetMinProtoVersion(TLS1_3_VERSION); !ok {
+		t.Fatal("Failed to set TLS min version")
+	}
+	if ok := ctx.SetMaxProtoVersion(TLS1_3_VERSION); !ok {
+		t.Fatal("Failed to set TLS max version")
+	}
+
+	client, err := Client(clientConn, ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server, err := newDefaultServer(t, serverConn, ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	doHandshake(t, server, client)
+
+	// We limited the allowed proto version to only tls1.3.
+	expected := "TLSv1.3"
+	if version := client.GetVersion(); version != expected {
+		t.Fatalf("Wrong version returned, expected %s, got %s", expected, version)
+	}
+}
+
+type tlsa struct {
+	usage, selector, matchingType byte
+	tlsaRecord                    []byte
+}
+
+func TestOpenSSLDaneValidation(t *testing.T) {
+	certHash, err := hex.DecodeString(certHashHex)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	matchingTlsa := tlsa{3, 0, 1, certHash}
+	// Needs to be X bytes long, otherwise it's considered invalid.
+	notMatchingTlsa := tlsa{3, 0, 1, bytes.Repeat([]byte{69}, len(certHash))}
+
+	cases := []struct {
+		name          string
+		tlsaRecords   []tlsa
+		shouldSucceed bool
+	}{
+		{"matching TLSA record", []tlsa{matchingTlsa}, true},
+		{"no matching TLSA record", []tlsa{notMatchingTlsa}, false},
+		{"no TLSA records found", []tlsa{}, false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			serverConn, clientConn := NetPipe(t)
+
+			ctx, err := NewCtx()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// This is needed as it initializes shared state in the ssl context.
+			if err = ctx.DaneEnable(); err != nil {
+				t.Fatal(err)
+			}
+			ctx.DaneSetFlags(DaneFlagNoDaneEeNamechecks)
+
+			client, err := Client(clientConn, ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// The basedomain doesn't matter as it's used as SNI and for server name checks - both
+			// aren't relevant for this test.
+			if err = client.DaneEnable("foo.bar"); err != nil {
+				t.Fatal(err)
+			}
+
+			for i, tlsa := range tc.tlsaRecords {
+				isUsable, err := client.DaneTlsaAdd(
+					tlsa.usage,
+					tlsa.selector,
+					tlsa.matchingType,
+					tlsa.tlsaRecord,
+				)
+				if err != nil {
+					t.Fatal(err)
+				} else if !isUsable {
+					t.Fatalf("tlsa record %d is unusable", i)
+				}
+			}
+
+			server, err := newDefaultServer(t, serverConn, ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			doHandshake(t, server, client)
+
+			isSuccess := client.DaneGet0DaneAuthority() >= 0
+			if isSuccess != tc.shouldSucceed {
+				t.Fatalf(
+					"Wrong validation result returned, expected %t, got %t",
+					tc.shouldSucceed,
+					isSuccess,
+				)
+			}
 		})
 	}
 }
