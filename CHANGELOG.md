@@ -6,22 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
-
 ## [Unreleased]
 
 ### Added
-
-- Bindings for [DANE](https://docs.openssl.org/1.1.1/man3/SSL_CTX_dane_enable/).
-- Bindings for [TLS handshake tracing](https://docs.openssl.org/master/man3/SSL_CTX_set_msg_callback/).
-- Bindings for `X509_digest()`.
-- Bindings for `X509_verify_cert_error_string()`.
-- Bindings for `SSL_get_version()`.
 
 ### Changed
 
 ### Fixed
 
-## [1.0.0] - 2024-02-09
+## [v1.1.0] - 2024-09-02
+
+The release adds more bindings.
+
+### Added
+
+- Bindings for [DANE](https://docs.openssl.org/1.1.1/man3/SSL_CTX_dane_enable/) (#14).
+- Bindings for [TLS handshake tracing](https://docs.openssl.org/master/man3/SSL_CTX_set_msg_callback/) (#14).
+- Bindings for `X509_digest()` (#14).
+- Bindings for `X509_verify_cert_error_string()` (#14).
+- Bindings for `SSL_get_version()` (#14).
+
+## [v1.0.0] - 2024-02-09
 
 The first release with a number of fixes. Since `libp2p/openssl` is not
 supported any more we need to support our version for usage in the Golang
