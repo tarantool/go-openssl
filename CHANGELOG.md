@@ -14,6 +14,8 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+- Unchecked `X509_STORE_CTX_get_ex_data` return value (#16).
+
 ## [v1.1.0] - 2024-09-02
 
 The release adds more bindings.

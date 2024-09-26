@@ -434,6 +434,10 @@ int X_SSL_new_index() {
 int X_SSL_verify_cb(int ok, X509_STORE_CTX* store) {
 	SSL* ssl = (SSL *)X509_STORE_CTX_get_ex_data(store,
 			SSL_get_ex_data_X509_STORE_CTX_idx());
+	if (ssl == NULL) {
+		return 0;
+	}
+
 	void* p = SSL_get_ex_data(ssl, get_ssl_idx());
 	// get the pointer to the go Ctx object and pass it back into the thunk
 	return go_ssl_verify_cb_thunk(p, ok, store);
@@ -557,6 +561,10 @@ long X_SSL_CTX_set_tlsext_servername_callback(
 int X_SSL_CTX_verify_cb(int ok, X509_STORE_CTX* store) {
 	SSL* ssl = (SSL *)X509_STORE_CTX_get_ex_data(store,
 			SSL_get_ex_data_X509_STORE_CTX_idx());
+	if (ssl == NULL) {
+		return 0;
+	}
+
 	SSL_CTX* ssl_ctx = SSL_get_SSL_CTX(ssl);
 	void* p = SSL_CTX_get_ex_data(ssl_ctx, get_ssl_ctx_idx());
 	// get the pointer to the go Ctx object and pass it back into the thunk
