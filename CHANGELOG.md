@@ -14,6 +14,12 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+## [v1.1.1] - 2024-09-27
+
+The small release include fixes for problems found by Svacer.
+
+### Fixed
+
 - Unchecked `X509_STORE_CTX_get_ex_data` return value (#16).
 
 ## [v1.1.0] - 2024-09-02
