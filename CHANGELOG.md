@@ -10,6 +10,9 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Added
 
+- Ctx: new method for closing context and clean internal resources
+  (TNTP-5472).
+
 ### Changed
 
 ### Fixed

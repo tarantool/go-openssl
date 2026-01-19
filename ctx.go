@@ -47,6 +47,8 @@ type Ctx struct {
 
 	ticket_store_mu sync.Mutex
 	ticket_store    *TicketStore
+
+	stored_ptr unsafe.Pointer
 }
 
 //export get_ssl_ctx_idx
@@ -57,15 +59,22 @@ func get_ssl_ctx_idx() C.int {
 func newCtx(method *C.SSL_METHOD) (*Ctx, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+
 	ctx := C.SSL_CTX_new(method)
 	if ctx == nil {
 		return nil, errorFromErrorQueue()
 	}
+
 	c := &Ctx{ctx: ctx}
-	C.SSL_CTX_set_ex_data(ctx, get_ssl_ctx_idx(), pointer.Save(c))
+
+	c.stored_ptr = pointer.Save(c)
+
+	C.SSL_CTX_set_ex_data(ctx, get_ssl_ctx_idx(), c.stored_ptr)
+
 	runtime.SetFinalizer(c, func(c *Ctx) {
 		C.SSL_CTX_free(c.ctx)
 	})
+
 	return c, nil
 }
 
@@ -647,4 +656,14 @@ func (c *Ctx) DaneSetFlags(flags DaneFlags) DaneFlags {
 // DaneClearFlags disables flags set by DaneSetFlags.
 func (c *Ctx) DaneClearFlags(flags DaneFlags) DaneFlags {
 	return DaneFlags(C.SSL_CTX_dane_clear_flags(c.ctx, C.ulong(flags)))
+}
+
+// Close frees resources.
+func (c *Ctx) Close() error {
+	if c.stored_ptr != nil {
+		pointer.Unref(c.stored_ptr)
+		c.stored_ptr = nil
+	}
+
+	return nil
 }

@@ -103,10 +103,12 @@ const (
 func newSSL(ctx *C.SSL_CTX) (*C.SSL, error) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+
 	ssl := C.SSL_new(ctx)
 	if ssl == nil {
 		return nil, errorFromErrorQueue()
 	}
+
 	return ssl, nil
 }
 
@@ -141,17 +143,18 @@ func newConn(conn net.Conn, ctx *Ctx) (*Conn, error) {
 	C.SSL_set_ex_data(s.ssl, get_ssl_idx(), pointer.Save(s))
 
 	c := &Conn{
-		SSL: s,
-
+		SSL:      s,
 		conn:     conn,
 		ctx:      ctx,
 		into_ssl: into_ssl,
 		from_ssl: from_ssl}
+
 	runtime.SetFinalizer(c, func(c *Conn) {
 		c.into_ssl.Disconnect(into_ssl_cbio)
 		c.from_ssl.Disconnect(from_ssl_cbio)
 		C.SSL_free(c.ssl)
 	})
+
 	return c, nil
 }
 
