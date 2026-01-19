@@ -17,6 +17,8 @@ package openssl
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCtxTimeoutOption(t *testing.T) {
@@ -25,12 +27,9 @@ func TestCtxTimeoutOption(t *testing.T) {
 	newTimeout1 := oldTimeout1 + (time.Duration(99) * time.Second)
 	oldTimeout2 := ctx.SetTimeout(newTimeout1)
 	newTimeout2 := ctx.GetTimeout()
-	if oldTimeout1 != oldTimeout2 {
-		t.Error("SetTimeout() returns something undocumented")
-	}
-	if newTimeout1 != newTimeout2 {
-		t.Error("SetTimeout() does not save anything to ctx")
-	}
+
+	require.Equal(t, oldTimeout1, oldTimeout2, "SetTimeout() returns something undocumented")
+	require.Equal(t, newTimeout1, newTimeout2, "SetTimeout() does not save anything to ctx")
 }
 
 func TestCtxSessCacheSizeOption(t *testing.T) {
@@ -39,10 +38,20 @@ func TestCtxSessCacheSizeOption(t *testing.T) {
 	newSize1 := oldSize1 + 42
 	oldSize2 := ctx.SessSetCacheSize(newSize1)
 	newSize2 := ctx.SessGetCacheSize()
-	if oldSize1 != oldSize2 {
-		t.Error("SessSetCacheSize() returns something undocumented")
-	}
-	if newSize1 != newSize2 {
-		t.Error("SessSetCacheSize() does not save anything to ctx")
-	}
+
+	require.Equal(t, oldSize1, oldSize2, "SessSetCacheSize() returns something undocumented")
+	require.Equal(t, newSize1, newSize2, "SessSetCacheSize() does not save anything to ctx")
+}
+
+func TestCtxClose(t *testing.T) {
+	ctx, err := NewCtx()
+	require.Nil(t, err)
+	require.NotNil(t, ctx)
+
+	err = ctx.Close()
+	require.Nil(t, err)
+
+	// Check double closing.
+	err = ctx.Close()
+	require.Nil(t, err)
 }

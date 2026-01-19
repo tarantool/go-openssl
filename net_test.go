@@ -27,6 +27,8 @@ func sslConnect(t *testing.T, ssl_listener net.Listener) {
 
 func TestDial(t *testing.T) {
 	ctx := openssl.GetCtx(t)
+	defer ctx.Close()
+
 	if err := ctx.SetCipherList("AES128-SHA"); err != nil {
 		t.Fatal(err)
 	}
@@ -64,6 +66,8 @@ func TestDial(t *testing.T) {
 
 func TestDialTimeout(t *testing.T) {
 	ctx := openssl.GetCtx(t)
+	defer ctx.Close()
+
 	if err := ctx.SetCipherList("AES128-SHA"); err != nil {
 		t.Fatal(err)
 	}
@@ -82,6 +86,8 @@ func TestDialTimeout(t *testing.T) {
 
 func TestDialContext(t *testing.T) {
 	ctx := openssl.GetCtx(t)
+	defer ctx.Close()
+
 	if err := ctx.SetCipherList("AES128-SHA"); err != nil {
 		t.Fatal(err)
 	}

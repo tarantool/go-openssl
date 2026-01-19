@@ -764,6 +764,8 @@ func GetCtx(t *testing.T) *Ctx {
 
 func TestOpenSSLLotsOfConns(t *testing.T) {
 	ctx := GetCtx(t)
+	defer ctx.Close()
+
 	if err := ctx.SetCipherList("AES128-SHA"); err != nil {
 		t.Fatal(err)
 	}
@@ -798,7 +800,6 @@ func getCtxWithPrivateKeyAfterFail(t *testing.T,
 	}
 
 	return ctx
-
 }
 
 func getPrivatePEMKeyAfterFail(t *testing.T) PrivateKey {

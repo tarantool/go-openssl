@@ -10,16 +10,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ "ubuntu", "macos" ]
-        go: [ "1.18.x", "1.19.x" ]
+        go: [ "1.19.x", "1.25.x" ]
     env:
       COVERAGES: ""
     runs-on: ${{ format('{0}-latest', matrix.os) }}
     name: ${{ matrix.os }} (go ${{ matrix.go }})
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
       - name: Go information
