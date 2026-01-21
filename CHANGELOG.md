@@ -10,12 +10,19 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Added
 
-- Ctx: new method for closing context and clean internal resources
-  (TNTP-5472).
-
 ### Changed
 
 ### Fixed
+
+## [v1.2.0] - 2025-01-21
+
+The release introduces `Close()` method of the Ctx, that
+could be called to clean internal resouces.
+
+### Added
+
+- ctx: new method for closing context and clean internal resources
+  (TNTP-5472).
 
 ## [v1.1.1] - 2024-09-27
 
