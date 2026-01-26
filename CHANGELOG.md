@@ -16,7 +16,7 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ## [v1.2.1] - 2025-01-27
 
-The releases fixes tests on Tarantool Cluster Manager.
+The release fixes tests on Tarantool Cluster Manager.
 
 ### Changed
 
