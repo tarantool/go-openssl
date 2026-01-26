@@ -14,6 +14,14 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+## [v1.2.1] - 2025-01-27
+
+The releases fixes tests on Tarantool Cluster Manager.
+
+### Changed
+
+- stretchr/testify dependency decreased to v1.10.0.
+
 ## [v1.2.0] - 2025-01-21
 
 The release introduces `Close()` method of the Ctx, that
