@@ -14,6 +14,12 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+## [v1.2.2] - 2026-04-03
+
+The release fixes build with OpenSSL v1.
+
+### Fixed
+
 - Guard `SSL_trace` usage with `OPENSSL_NO_SSL_TRACE` check to fix build on
   OpenSSL configurations without SSL trace support.
 
