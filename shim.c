@@ -444,6 +444,7 @@ int X_SSL_verify_cb(int ok, X509_STORE_CTX* store) {
 }
 
 void X_SSL_toggle_tracing(SSL* ssl, FILE* output, short enable) {
+#ifndef OPENSSL_NO_SSL_TRACE
 	if (enable) {
 		SSL_set_msg_callback(ssl, SSL_trace);
 		SSL_set_msg_callback_arg(ssl, BIO_new_fp(output, BIO_NOCLOSE));
@@ -451,6 +452,7 @@ void X_SSL_toggle_tracing(SSL* ssl, FILE* output, short enable) {
 		SSL_set_msg_callback(ssl, NULL);
 		SSL_set_msg_callback_arg(ssl, NULL);
 	}
+#endif
 }
 
 const SSL_METHOD *X_SSLv23_method() {

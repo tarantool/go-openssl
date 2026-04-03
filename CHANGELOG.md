@@ -14,6 +14,9 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+- Guard `SSL_trace` usage with `OPENSSL_NO_SSL_TRACE` check to fix build on
+  OpenSSL configurations without SSL trace support.
+
 ## [v1.2.1] - 2025-01-27
 
 The release fixes tests on Tarantool Cluster Manager.
