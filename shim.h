@@ -99,6 +99,9 @@ extern int X_SSL_CTX_ticket_key_cb(SSL *s, unsigned char key_name[16],
         EVP_CIPHER_CTX *cctx, HMAC_CTX *hctx, int enc);
 extern int SSL_CTX_set_alpn_protos(SSL_CTX *ctx, const unsigned char *protos,
                              unsigned int protos_len);
+extern int X_SSL_CTX_alpn_protos_new_index();
+extern int X_SSL_CTX_set_server_alpn(SSL_CTX *ctx, const unsigned char *protos,
+                             unsigned int protos_len);
 
 /* BIO methods */
 extern int X_BIO_get_flags(BIO *b);
