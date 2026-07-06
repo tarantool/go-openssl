@@ -34,6 +34,11 @@ import (
 var (
 	ssl_ctx_idx = C.X_SSL_CTX_new_index()
 
+	// alpn_protos_idx is the SSL_CTX ex_data index under which the server-side
+	// ALPN preference list is stored; allocating it here (package init) ensures
+	// it exists before any SetServerALPNProtos call or handshake.
+	_ = C.X_SSL_CTX_alpn_protos_new_index()
+
 	logger = spacelog.GetLogger()
 )
 
@@ -577,6 +582,52 @@ func (c *Ctx) SetNextProtos(protos []string) error {
 		C.uint(len(vector))))
 	if ret != 0 {
 		return errors.New("error while setting protos to ctx")
+	}
+	return nil
+}
+
+// SetServerALPNProtos enables server-side ALPN protocol selection. protos is the
+// server's ordered preference list; during the TLS handshake a protocol common
+// to the client's offer and this list is selected and echoed back in the
+// ServerHello. If the client and server share no protocol, the handshake is
+// aborted with a no_application_protocol alert (RFC 7301).
+//
+// Selection is performed by OpenSSL's SSL_select_next_proto and favors this
+// list's order: the first protocol here that the client also advertised is
+// chosen (server preference). Read the result with Conn.GetALPNNegotiated after
+// the handshake.
+//
+// This is what a server must call to negotiate a specific protocol such as "h2"
+// for gRPC/HTTP2. It differs from SetNextProtos, which only sets the client-side
+// advertised list (SSL_CTX_set_alpn_protos) and has no effect on server-side
+// selection.
+//
+// protos must be non-empty: enabling server-side selection with an empty list
+// would abort every handshake in which the client offers ALPN (the callback
+// finds no protocol to select and sends a no_application_protocol alert). To
+// leave server-side ALPN unconfigured, simply do not call this method.
+func (c *Ctx) SetServerALPNProtos(protos []string) error {
+	if len(protos) == 0 {
+		return errors.New("protos must be non-empty")
+	}
+	// Encode the preference list in ALPN wire format: each protocol prefixed by
+	// its 1-byte length. This is the encoding SSL_select_next_proto expects.
+	wire := make([]byte, 0)
+	for _, proto := range protos {
+		if len(proto) == 0 || len(proto) > 255 {
+			return fmt.Errorf(
+				"invalid ALPN proto %q: length must be between 1 and 255, got %d",
+				proto, len(proto))
+		}
+		wire = append(wire, byte(len(proto)))
+		wire = append(wire, proto...)
+	}
+	// X_SSL_CTX_set_server_alpn copies wire into ctx-owned (OpenSSL-freed) memory,
+	// so the caller's slice is never aliased and the stored copy outlives every
+	// handshake that reads it.
+	if C.X_SSL_CTX_set_server_alpn(c.ctx,
+		(*C.uchar)(unsafe.Pointer(&wire[0])), C.uint(len(wire))) != 1 {
+		return errors.New("failed to configure server ALPN")
 	}
 	return nil
 }

@@ -10,6 +10,19 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Added
 
+- ctx: `SetServerALPNProtos` for server-side ALPN protocol selection. It
+  registers `SSL_CTX_set_alpn_select_cb` and delegates the match to OpenSSL's
+  `SSL_select_next_proto`, so a server selects and echoes a protocol (e.g. `h2`)
+  from the client's advertised list, which is required for serving standard
+  gRPC/HTTP2 clients. The pre-existing `SetNextProtos` only sets the client-side
+  advertised list and does not select on the server. The list must be non-empty;
+  an empty list is rejected so the server never installs a callback that would
+  abort every ALPN-offering handshake. Works with per-vhost SNI: when the
+  servername callback swaps the `Ctx` via `SetSSLCtx`, selection runs against the
+  swapped-in `Ctx`'s list.
+- ssl: `GetALPNNegotiated` (promoted to `Conn`) returns the protocol selected via
+  ALPN during the handshake, wrapping `SSL_get0_alpn_selected`.
+
 ### Changed
 
 ### Fixed

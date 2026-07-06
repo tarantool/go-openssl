@@ -75,6 +75,22 @@ func (s *SSL) GetServername() string {
 	return C.GoString(C.SSL_get_servername(s.ssl, C.TLSEXT_NAMETYPE_host_name))
 }
 
+// GetALPNNegotiated returns the application protocol selected via ALPN during
+// the handshake, or "" if none was negotiated (the peer offered no ALPN, or the
+// two sides shared no protocol). It is only meaningful after the handshake has
+// completed, and works on both client and server connections. This is how a
+// server reads the result of SetServerALPNProtos selection. Wraps
+// SSL_get0_alpn_selected.
+func (s *SSL) GetALPNNegotiated() string {
+	var data *C.uchar
+	var length C.uint
+	C.SSL_get0_alpn_selected(s.ssl, &data, &length)
+	if length == 0 {
+		return ""
+	}
+	return C.GoStringN((*C.char)(unsafe.Pointer(data)), C.int(length))
+}
+
 // GetOptions returns SSL options. See
 // https://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
 func (s *SSL) GetOptions() Options {
