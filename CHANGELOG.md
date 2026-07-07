@@ -10,6 +10,17 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [v1.3.0] - 2026-07-07
+
+The release adds server-side ALPN protocol selection for serving standard
+gRPC/HTTP2 clients.
+
+### Added
+
 - ctx: `SetServerALPNProtos` for server-side ALPN protocol selection. It
   registers `SSL_CTX_set_alpn_select_cb` and delegates the match to OpenSSL's
   `SSL_select_next_proto`, so a server selects and echoes a protocol (e.g. `h2`)
@@ -22,10 +33,6 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
   swapped-in `Ctx`'s list.
 - ssl: `GetALPNNegotiated` (promoted to `Conn`) returns the protocol selected via
   ALPN during the handshake, wrapping `SSL_get0_alpn_selected`.
-
-### Changed
-
-### Fixed
 
 ## [v1.2.2] - 2026-04-03
 
