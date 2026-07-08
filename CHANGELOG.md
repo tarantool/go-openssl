@@ -10,6 +10,14 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Added
 
+- Optional static linking with the GOST engine for OpenSSL,
+  enabled with the `openssl_gost` build tag. When combined with static
+  GOST engine libraries (provided via `pkg-config`), Russian GOST
+  cryptographic algorithms (GOST 28147-89, Streebog, Kuznyechik, Magma,
+  etc.) become available through the standard `GetCipherByName` /
+  `GetDigestByName` API without any runtime engine loading. Requires
+  OpenSSL 3.0+.
+
 ### Changed
 
 ### Fixed

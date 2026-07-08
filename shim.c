@@ -372,6 +372,10 @@ int X_PEM_write_bio_PrivateKey_traditional(BIO *bio, EVP_PKEY *key, const EVP_CI
  ************************************************
  */
 
+#ifdef GOST_ENGINE_STATIC
+extern void ENGINE_load_gost(void);
+#endif
+
 int X_shim_init() {
 	int rc = 0;
 
@@ -380,6 +384,16 @@ int X_shim_init() {
 	SSL_load_error_strings();
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
+#ifdef GOST_ENGINE_STATIC
+	ENGINE_load_gost();
+	{
+		ENGINE *e = ENGINE_by_id("gost");
+		if (e == NULL) {
+			return -1;
+		}
+		ENGINE_free(e);
+	}
+#endif
 	//
 	// Set up OPENSSL thread safety callbacks.
 	rc = go_init_locks();
