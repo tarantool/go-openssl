@@ -19,6 +19,8 @@ package openssl_test
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,4 +71,24 @@ func TestGostCipherRoundTrip(t *testing.T) {
 			require.Equal(t, plaintext, decrypted)
 		})
 	}
+}
+
+func TestLoadPrivateKeyFromPEM_GOST(t *testing.T) {
+	keyPath := filepath.Join("testdata", "gost", "client.key")
+
+	keyPEM, err := os.ReadFile(keyPath)
+	require.NoError(t, err)
+
+	key, err := openssl.LoadPrivateKeyFromPEM(keyPEM)
+	require.NoError(t, err)
+	require.NotNil(t, key)
+}
+
+func TestNewCtxFromFiles_GOST(t *testing.T) {
+	ctx, err := openssl.NewCtxFromFiles(
+		filepath.Join("testdata", "gost", "client.crt"),
+		filepath.Join("testdata", "gost", "client.key"),
+	)
+	require.NoError(t, err)
+	ctx.Close()
 }
