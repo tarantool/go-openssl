@@ -14,6 +14,9 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+- The statically linked GOST engine loaded but not initialized or
+  set as default, breaking GOST PEM key/certificate decoding (#28).
+
 ## [v1.4.0] - 2026-07-08
 
 The release adds optional static linking with the GOST engine, making Russian
