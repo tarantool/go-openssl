@@ -391,7 +391,27 @@ int X_shim_init() {
 		if (e == NULL) {
 			return -1;
 		}
-		ENGINE_free(e);
+
+        if (ENGINE_init(e) != 1) {
+                ENGINE_free(e);
+                return -1;
+        }
+
+        // Make GOST engine provide default methods so PEM/X509 can decode keys.
+        unsigned int flags =
+                ENGINE_METHOD_PKEY_METHS |
+                ENGINE_METHOD_PKEY_ASN1_METHS |
+                ENGINE_METHOD_DIGESTS |
+                ENGINE_METHOD_CIPHERS;
+
+        if (ENGINE_set_default(e, flags) != 1) {
+                ENGINE_finish(e);
+                ENGINE_free(e);
+                return -1;
+        }
+
+        ENGINE_finish(e);
+        ENGINE_free(e);
 	}
 #endif
 	//
