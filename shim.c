@@ -379,12 +379,8 @@ extern void ENGINE_load_gost(void);
 int X_shim_init() {
 	int rc = 0;
 
-	OPENSSL_config(NULL);
-	ENGINE_load_builtin_engines();
-	SSL_load_error_strings();
-	SSL_library_init();
-	OpenSSL_add_all_algorithms();
 #ifdef GOST_ENGINE_STATIC
+	OPENSSL_init_ssl(OPENSSL_INIT_NO_LOAD_CONFIG, NULL);
 	ENGINE_load_gost();
 	{
 		ENGINE *e = ENGINE_by_id("gost");
@@ -413,7 +409,13 @@ int X_shim_init() {
         ENGINE_finish(e);
         ENGINE_free(e);
 	}
-#endif
+#else
+	OPENSSL_config(NULL);
+	ENGINE_load_builtin_engines();
+	SSL_load_error_strings();
+	SSL_library_init();
+	OpenSSL_add_all_algorithms();
+
 	//
 	// Set up OPENSSL thread safety callbacks.
 	rc = go_init_locks();
@@ -422,6 +424,7 @@ int X_shim_init() {
 	}
 	CRYPTO_set_locking_callback(go_thread_locking_callback);
 	CRYPTO_set_id_callback(go_thread_id_callback);
+#endif
 
 	rc = x_bio_init_methods();
 	if (rc != 0) {
