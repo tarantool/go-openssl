@@ -14,6 +14,13 @@ Versioning](http://semver.org/spec/v2.0.0.html) except to the first release.
 
 ### Fixed
 
+## [v1.4.2] - 2026-08-17
+
+The release fixes the floating-point exception during GOST engine
+initialization.
+
+### Fixed
+
 - The statically linked OpenSSL 3.x with the GOST engine leads to
   floating-point exception during initialization because of
   incompatible OpenSSL initialization routine.
